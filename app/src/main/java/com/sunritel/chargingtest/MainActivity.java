@@ -13,6 +13,8 @@ import android.os.Vibrator;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.util.Log;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private TextView text_view;
@@ -20,6 +22,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private Button button;
     private StringBuilder sb2;
+
+    private int chargingCurrent;
+    private BatteryManager mBatteryManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,13 +40,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         intentFilter.addAction(Intent.ACTION_POWER_DISCONNECTED);
         intentFilter.addAction(Intent.ACTION_BATTERY_CHANGED);
         registerReceiver(powerConnectionReceiver, intentFilter);
+        mBatteryManager = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
     }
 
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.button) {
             sb2 = new StringBuilder();
-            text_view2.setText(sb2);
+            chargingCurrent = (int) (mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)/1000);
+            text_view2.setText("Charging Current: " + chargingCurrent + " mA");
+            Log.d("Rin", "chargingCurrent: " + chargingCurrent);
         }
     }
 
@@ -53,6 +61,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         private int chargePlug;
         private boolean usbCharge;
         private boolean acCharge;
+
+
+
+
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -70,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 chargePlug = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
                 usbCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_USB;
                 acCharge = chargePlug == BatteryManager.BATTERY_PLUGGED_AC;
+                chargingCurrent = (int) (mBatteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW));
 
                 level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
 
@@ -77,6 +90,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 sb.append("USB: ").append(usbCharge).append("\n");
                 sb.append("AC: ").append(acCharge).append("\n");
                 sb.append("Battery: ").append(level).append("%\n");
+                sb.append("Charging Current: ").append(chargingCurrent).append("mA\n");
+                Log.d("Rin", "onReceive: "+sb);
             }
 
             switch (action) {
@@ -85,15 +100,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     text_view.setText(sb);
                     vb.vibrate(vibrationEffect);
                     sb2.append(text_view2.getText());
-                    sb2.append("Power connected").append(" level:").append(level).append("\n");
+                    sb2.append("Power connected").append(" level:").append(level).append(" chargingCurrent:").append(chargingCurrent).append("\n");
                     text_view2.setText(sb2);
+                    Toast.makeText(context, "Power connected", Toast.LENGTH_SHORT).show();
                     break;
                 case Intent.ACTION_POWER_DISCONNECTED:
                     sb.append("Status: Power disconnected");
                     text_view.setText(sb);
                     vb.vibrate(vibrationEffect);
                     sb2.append(text_view2.getText());
-                    sb2.append("Power disconnected").append(" level:").append(level).append("\n");
+                    sb2.append("Power disconnected").append(" level:").append(level).append(" chargingCurrent:").append(chargingCurrent).append("\n");
                     text_view2.setText(sb2);
                     break;
                 case Intent.ACTION_BATTERY_CHANGED:
@@ -101,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     text_view.setText(sb);
                     vb.vibrate(vibrationEffect);
                     sb2.append(text_view2.getText());
-                    sb2.append("Battery changed").append(" level:").append(level).append("\n");
+                    sb2.append("Battery changed").append(" level:").append(level).append(" chargingCurrent:").append(chargingCurrent).append("\n");
                     text_view2.setText(sb2);
                     break;
                 default:
